@@ -13,6 +13,8 @@ repositories {
 }
 
 dependencies {
+
+    implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka:3.2.5'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 //    implementation 'org.springframework.boot:spring-boot-starter-data-ldap'
     implementation 'org.springframework.boot:spring-boot-starter-data-rest'
@@ -20,6 +22,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.apache.kafka:kafka-streams'
     implementation 'org.springframework.kafka:spring-kafka'
+
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
