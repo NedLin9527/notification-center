@@ -6,8 +6,10 @@ import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.kafka.KafkaStreamsConfig;
 import com.cdfholding.notificationcenter.kafka.NotificationTopology;
 import java.util.Collection;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.state.HostInfo;
@@ -42,6 +44,18 @@ public class AdminController {
 
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
 
+    StringSerializer stringSerializer =new StringSerializer();
+    //Collection<StreamsMetadata> metadata =
+    KeyQueryMetadata a = kafkaStreams.queryMetadataForKey("eventTable", request.getAdUser(),
+        stringSerializer);
+    System.out.println(a.activeHost());
+    // System.out.println(metadata.size());
+//    for (StreamsMetadata streamsMetadata : metadata) {
+//      System.out.println(
+//          "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
+//              .port());
+//      System.out.println(streamsMetadata.stateStoreNames());
+//    }
     ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
@@ -50,15 +64,6 @@ public class AdminController {
     System.out.println(value);
 
     KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
-
-    Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
-    System.out.println(metadata.size());
-    for (StreamsMetadata streamsMetadata : metadata) {
-      System.out.println(
-          "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
-              .port());
-      System.out.println(streamsMetadata.stateStoreNames());
-    }
 
     return new AllowedUserApplyResponse(value.getAdUser(), value.getResult(), value.getReason());
   }
