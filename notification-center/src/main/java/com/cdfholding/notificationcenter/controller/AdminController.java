@@ -1,5 +1,6 @@
 package com.cdfholding.notificationcenter.controller;
 
+import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
@@ -56,15 +57,55 @@ public class AdminController {
 //              .port());
 //      System.out.println(streamsMetadata.stateStoreNames());
 //    }
-    ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
+    ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> eventStore = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
-    AllowedUserAppliedEvent value = keyValueStore.get(request.getAdUser());
+    AllowedUserAppliedEvent event = eventStore.get(request.getAdUser());
+    int eventTimeout = 0;
+    while (eventTimeout < 60 && event == null) {
+      eventTimeout++;
+      System.out.println("timeout " + eventTimeout);
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    System.out.println(event);
 
-    System.out.println(value);
+    KeyValueIterator<String, AllowedUserAppliedEvent> range = eventStore.all();
 
-    KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
+    Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
+    System.out.println(metadata.size());
+    for (StreamsMetadata streamsMetadata : metadata) {
+      System.out.println(
+          "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
+              .port());
+      System.out.println(streamsMetadata.stateStoreNames());
+    }
 
-    return new AllowedUserApplyResponse(value.getAdUser(), value.getResult(), value.getReason());
+    return new AllowedUserApplyResponse(event.getAdUser(), event.getResult(), event.getReason());
+  }
+
+  @PostMapping(path = "/queryUser")
+  public User queryUser(@RequestBody AllowedUserApplyRequest request){
+    request.setType("queryUser");
+    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
+
+    ReadOnlyKeyValueStore<String, User> userStore = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    User user = userStore.get(request.getAdUser());
+
+    KeyValueIterator<String, User> allUser = userStore.all();
+    while (allUser.hasNext()) {
+      System.out.println(allUser.next().value);
+    }
+
+    return user;
   }
 }
