@@ -60,6 +60,10 @@ public class NotificationTopology {
     KTable<String, AllowedUserAppliedEvent> eventTable = streamsBuilder.table("allowed-user-event",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()),
         Materialized.as("eventTable"));
+    
+    KTable<String, User> userTable = streamsBuilder.table("allowed-user",
+        Consumed.with(Serdes.String(), JsonSerdes.User()),
+        Materialized.as("userTable"));
 
 
   }
