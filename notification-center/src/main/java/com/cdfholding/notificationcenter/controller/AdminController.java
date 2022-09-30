@@ -6,6 +6,7 @@ import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
+import lombok.SneakyThrows;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
@@ -42,6 +43,7 @@ public class AdminController {
   }
 
 
+  @SneakyThrows
   @PostMapping(path = "/apply")
   public AllowedUserApplyResponse apply(@RequestBody AllowedUserApplyRequest request) {
     request.setType("apply");
@@ -105,6 +107,7 @@ public class AdminController {
     return new AllowedUserApplyResponse(value.getAdUser(), value.getResult(), value.getReason());
   }
 
+  @SneakyThrows
   @GetMapping(path = "/checkEvent/{adUser}")
   public AllowedUserAppliedEvent checkEvent(@PathVariable("adUser") String adUser) {
 
@@ -122,7 +125,7 @@ public class AdminController {
     	  Thread.sleep(500);
       	keyValueStore = kafkaStreams.store(
       	          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-        value = keyValueStore.get(request.getAdUser());
+        value = keyValueStore.get(adUser);
     }
     System.out.println(value);
 
