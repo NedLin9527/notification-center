@@ -52,6 +52,10 @@ public class AdminController {
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     StringSerializer stringSerializer = new StringSerializer();
 
+    // while loop until KafkaStreams.State.RUNNING
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
+        Thread.sleep(500);
+    }
     // stream eventTable find HostInfo
     KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("eventTable", request.getAdUser(),
         stringSerializer);
@@ -86,8 +90,13 @@ public class AdminController {
           StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
       value = keyValueStore.get(request.getAdUser());
-      //while loop
-
+      //while loop until get the data
+      while (value == null ) {
+    	  Thread.sleep(500);
+      	keyValueStore = kafkaStreams.store(
+      	          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
+        value = keyValueStore.get(request.getAdUser());
+      }
       System.out.println(value);
 
       KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
@@ -100,12 +109,21 @@ public class AdminController {
   public AllowedUserAppliedEvent checkEvent(@PathVariable("adUser") String adUser) {
 
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
-
+    // while loop until KafkaStreams.State.RUNNING
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
+        Thread.sleep(500);
+    }
     ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
     AllowedUserAppliedEvent value = keyValueStore.get(adUser);
-
+    //while loop until get the data
+    while (value == null ) {
+    	  Thread.sleep(500);
+      	keyValueStore = kafkaStreams.store(
+      	          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
+        value = keyValueStore.get(request.getAdUser());
+    }
     System.out.println(value);
 
     KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
