@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class LdapInfo {
-    String adUser;
-    Boolean isValid;
+
+  String adUser;
+  Boolean isValid;
 }

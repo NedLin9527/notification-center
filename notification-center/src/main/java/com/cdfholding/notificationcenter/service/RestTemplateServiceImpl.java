@@ -15,8 +15,9 @@ public class RestTemplateServiceImpl implements RestTemplateService {
 
     RestTemplate restemp = new RestTemplate();
 
-    return restemp.getForObject(url, Object.class);
+    Object result = restemp.getForObject(url, Object.class);
 
+    return result;
 
   }
 }

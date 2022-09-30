@@ -11,39 +11,40 @@ import java.util.Map;
 import org.apache.kafka.common.serialization.Deserializer;
 
 public class JsonDeserializer<T> implements Deserializer<T> {
-    private Gson gson =
-            new GsonBuilder()
-                    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
-                    .create();
 
-    private Class<T> destinationClass;
-    private Type reflectionTypeToken;
+  private Gson gson =
+      new GsonBuilder()
+          .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_DASHES)
+          .create();
 
-    /**
-     * Default constructor needed by Kafka
-     */
-    public JsonDeserializer(Class<T> destinationClass) {
-        this.destinationClass = destinationClass;
+  private Class<T> destinationClass;
+  private Type reflectionTypeToken;
+
+  /**
+   * Default constructor needed by Kafka
+   */
+  public JsonDeserializer(Class<T> destinationClass) {
+    this.destinationClass = destinationClass;
+  }
+
+  public JsonDeserializer(Type reflectionTypeToken) {
+    this.reflectionTypeToken = reflectionTypeToken;
+  }
+
+  @Override
+  public void configure(Map<String, ?> props, boolean isKey) {
+  }
+
+  @Override
+  public T deserialize(String topic, byte[] bytes) {
+    if (bytes == null) {
+      return null;
     }
+    Type type = destinationClass != null ? destinationClass : reflectionTypeToken;
+    return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), type);
+  }
 
-    public JsonDeserializer(Type reflectionTypeToken) {
-        this.reflectionTypeToken = reflectionTypeToken;
-    }
-
-    @Override
-    public void configure(Map<String, ?> props, boolean isKey) {
-    }
-
-    @Override
-    public T deserialize(String topic, byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        Type type = destinationClass != null ? destinationClass : reflectionTypeToken;
-        return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), type);
-    }
-
-    @Override
-    public void close() {
-    }
+  @Override
+  public void close() {
+  }
 }

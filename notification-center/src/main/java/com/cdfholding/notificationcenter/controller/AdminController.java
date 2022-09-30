@@ -4,6 +4,7 @@ import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
@@ -58,7 +59,7 @@ public class AdminController {
     AllowedUserAppliedEvent value = new AllowedUserAppliedEvent();
 
     if (!hostInfo.equals(keyMetada.activeHost())) {
-      System.out.println("HostInfo is different!!" +keyMetada.activeHost());
+      System.out.println("HostInfo is different!!" + keyMetada.activeHost());
 
       // Print all metadata HostInfo
       Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
@@ -71,9 +72,13 @@ public class AdminController {
       }
 
       // Remote
-      value = (AllowedUserAppliedEvent) restTemplateService.restTemplate(
+      ObjectMapper mapper = new ObjectMapper();
+
+      Object req = restTemplateService.restTemplate(
           "checkEvent/" + request.getAdUser(), keyMetada.activeHost().host(),
           keyMetada.activeHost().port());
+
+      value = mapper.convertValue(req, AllowedUserAppliedEvent.class);
 
     } else {
 
