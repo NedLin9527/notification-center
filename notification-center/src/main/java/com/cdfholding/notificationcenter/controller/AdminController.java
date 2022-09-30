@@ -86,6 +86,7 @@ public class AdminController {
           StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
       value = keyValueStore.get(request.getAdUser());
+      //while loop
 
       System.out.println(value);
 
