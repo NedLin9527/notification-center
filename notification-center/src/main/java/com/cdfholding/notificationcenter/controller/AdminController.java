@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AdminController {
 
-  final HostInfo hostInfo = new HostInfo("192.168.2.63", 8080);
+  final HostInfo hostInfo = new HostInfo("192.168.20.63", 8080);
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
 
@@ -58,7 +58,7 @@ public class AdminController {
     AllowedUserAppliedEvent value = new AllowedUserAppliedEvent();
 
     if (!hostInfo.equals(keyMetada.activeHost())) {
-      System.out.println("HostInfo is different!!");
+      System.out.println("HostInfo is different!!" +keyMetada.activeHost());
 
       // Print all metadata HostInfo
       Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
@@ -79,7 +79,7 @@ public class AdminController {
 
       ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
           StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-      
+
       value = keyValueStore.get(request.getAdUser());
 
       System.out.println(value);
