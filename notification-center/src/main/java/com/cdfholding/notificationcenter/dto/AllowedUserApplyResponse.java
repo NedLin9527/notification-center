@@ -8,12 +8,12 @@ import lombok.ToString;
 @AllArgsConstructor
 public class AllowedUserApplyResponse {
 
-    @Getter
-    String adUser;
+  @Getter
+  String adUser;
 
-    @Getter
-    String result;
+  @Getter
+  String result;
 
-    @Getter
-    String reason;
+  @Getter
+  String reason;
 }

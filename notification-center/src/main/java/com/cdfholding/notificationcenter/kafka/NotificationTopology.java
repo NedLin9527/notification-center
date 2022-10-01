@@ -36,7 +36,7 @@ public class NotificationTopology {
 
     KStream<String, AllowedUserApplyRequest> applyRequestKStream = branches.get(
         "Branch-ApplyRequest");
-    KStream<String, AllowedUserApplyRequest> otherKStream = branches.get("Branch-Others");
+    // KStream<String, AllowedUserApplyRequest> otherKStream = branches.get("Branch-Others");
     KStream<String, User> userKStream = applyRequestKStream.mapValues(
         allowedUserApplyRequest -> queryLdap(allowedUserApplyRequest.getAdUser()));
 
@@ -46,7 +46,7 @@ public class NotificationTopology {
         .noDefaultBranch();
 
     KStream<String, User> validUsers = userBranches.get("Branch2-ValidUsers");
-    KStream<String, User> invalidUsers = userBranches.get("Branch2-InvalidUsers");
+    // KStream<String, User> invalidUsers = userBranches.get("Branch2-InvalidUsers");
     // allowed-user
     validUsers.to("allowed-user", Produced.with(Serdes.String(), JsonSerdes.User()));
 
@@ -54,18 +54,16 @@ public class NotificationTopology {
     KStream<String, AllowedUserAppliedEvent> eventStream = userKStream.map(
         (String, User) -> new KeyValue<>(String, allowedUserAppliedEvent(String, User)));
 
-    eventStream.to("allowed-user-event",
+    eventStream.to("allowed-user-events",
         Produced.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()));
-
-    KTable<String, AllowedUserAppliedEvent> eventTable = streamsBuilder.table("allowed-user-event",
-        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()),
-        Materialized.as("eventTable"));
     
-    KTable<String, User> userTable = streamsBuilder.table("allowed-user",
-        Consumed.with(Serdes.String(), JsonSerdes.User()),
+    streamsBuilder.table("allowed-user",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedSuccess()),
         Materialized.as("userTable"));
 
-
+    streamsBuilder.table("allowed-user-events",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()),
+        Materialized.as("eventTable"));
   }
 
 

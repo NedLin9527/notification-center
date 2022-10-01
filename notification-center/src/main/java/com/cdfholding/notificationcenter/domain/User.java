@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class User {
-    String adUser;
-    LdapInfo ldapInfo;
+
+  String adUser;
+  LdapInfo ldapInfo;
 }
