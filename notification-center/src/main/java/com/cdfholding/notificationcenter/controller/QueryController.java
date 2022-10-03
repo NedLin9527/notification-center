@@ -54,9 +54,7 @@ public class QueryController {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
-    keyValueStore = kafkaStreams.store(
-      StoreQueryParameters.fromNameAndType("userTable", 
-        QueryableStoreTypes.keyValueStore()));
+    
     List<User> userValues = new ArrayList<>();
     keyValueStore.all().forEachRemaining(User -> userValues.add(User.value));
     for(User user: userValues) {
