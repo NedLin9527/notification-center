@@ -56,9 +56,9 @@ public class NotificationTopology {
 
     eventStream.to("allowed-user-events",
         Produced.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()));
-    
+
     streamsBuilder.table("allowed-user",
-        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedSuccess()),
+        Consumed.with(Serdes.String(), JsonSerdes.User()),
         Materialized.as("userTable"));
 
     streamsBuilder.table("allowed-user-events",
@@ -72,7 +72,7 @@ public class NotificationTopology {
     AllowedUserAppliedEvent appliedEvent = new AllowedUserAppliedEvent();
     appliedEvent.setAdUser(adUser);
 
-    if (null != user) {
+    if (null != user & user.getLdapInfo().getIsValid() == true) {
       appliedEvent.setResult("Success");
       appliedEvent.setReason(null);
     } else {

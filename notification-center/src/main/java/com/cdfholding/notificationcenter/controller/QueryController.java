@@ -22,7 +22,7 @@ import com.cdfholding.notificationcenter.service.RestTemplateService;
 @RestController
 public class QueryController {
   
-  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8100);
+  final HostInfo hostInfo = new HostInfo("192.168.156.63", 8100);
   
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
   

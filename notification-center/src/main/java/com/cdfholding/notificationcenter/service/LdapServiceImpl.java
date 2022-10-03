@@ -10,11 +10,12 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 
 public class LdapServiceImpl
-    implements LdapService {
+   // implements LdapService
+{
 
   private String ldap_server = "localhost:8081";
 
-  @Override
+  //@Override
   public LdapInfo query(String adUser) {
 
     String LDAP_URL = "ldap://" + ldap_server + "/dc=example,dc=org";
