@@ -19,7 +19,7 @@ public class KafkaProducerConfiguration {
   @Bean
   public ProducerFactory<String, AllowedUserApplyRequest> producerFactory() {
     Map<String, Object> props = new HashMap<>();
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:29092");
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.156.63:29092,192.168.156.63:29093");
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
