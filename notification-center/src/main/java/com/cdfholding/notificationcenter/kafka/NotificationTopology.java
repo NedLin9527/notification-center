@@ -36,7 +36,7 @@ public class NotificationTopology {
 
     KStream<String, AllowedUserApplyRequest> applyRequestKStream = branches.get(
         "Branch-ApplyRequest");
-    KStream<String, AllowedUserApplyRequest> otherKStream = branches.get("Branch-Others");
+    // KStream<String, AllowedUserApplyRequest> otherKStream = branches.get("Branch-Others");
     KStream<String, User> userKStream = applyRequestKStream.mapValues(
         allowedUserApplyRequest -> queryLdap(allowedUserApplyRequest.getAdUser()));
 
@@ -46,7 +46,7 @@ public class NotificationTopology {
         .noDefaultBranch();
 
     KStream<String, User> validUsers = userBranches.get("Branch2-ValidUsers");
-    KStream<String, User> invalidUsers = userBranches.get("Branch2-InvalidUsers");
+    // KStream<String, User> invalidUsers = userBranches.get("Branch2-InvalidUsers");
     // allowed-user
     validUsers.to("allowed-user", Produced.with(Serdes.String(), JsonSerdes.User()));
 
@@ -56,12 +56,14 @@ public class NotificationTopology {
 
     eventStream.to("allowed-user-events",
         Produced.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()));
+    
+    streamsBuilder.table("allowed-user",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedSuccess()),
+        Materialized.as("userTable"));
 
-    KTable<String, AllowedUserAppliedEvent> eventTable = streamsBuilder.table("allowed-user-events",
+    streamsBuilder.table("allowed-user-events",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()),
         Materialized.as("eventTable"));
-
-
   }
 
 

@@ -1,19 +1,12 @@
 package com.cdfholding.notificationcenter.controller;
 
-import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
-import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
-import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
-import com.cdfholding.notificationcenter.service.RestTemplateService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
-import lombok.SneakyThrows;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.state.HostInfo;
-import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +17,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
+import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
+import com.cdfholding.notificationcenter.service.RestTemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 
 @RestController
 public class AdminController {
 
-  final HostInfo hostInfo = new HostInfo("192.168.156.63", 8080);
+  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8100);
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
 
@@ -100,8 +99,6 @@ public class AdminController {
         value = keyValueStore.get(request.getAdUser());
       }
       System.out.println(value);
-
-      KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
     }
 
     return new AllowedUserApplyResponse(value.getAdUser(), value.getResult(), value.getReason());
@@ -128,8 +125,6 @@ public class AdminController {
         value = keyValueStore.get(adUser);
     }
     System.out.println(value);
-
-    KeyValueIterator<String, AllowedUserAppliedEvent> range = keyValueStore.all();
 
     return value;
   }

@@ -31,4 +31,12 @@ public class JsonSerdes {
 
     return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
   }
+
+  public static Serde<AllowedUserAppliedSuccess> AllowedUserAppliedSuccess() {
+    JsonSerializer<AllowedUserAppliedSuccess> jsonSerializer = new JsonSerializer<>();
+    JsonDeserializer<AllowedUserAppliedSuccess> jsonDeserializer = new JsonDeserializer<>(
+        AllowedUserAppliedSuccess.class);
+
+    return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+  }
 }

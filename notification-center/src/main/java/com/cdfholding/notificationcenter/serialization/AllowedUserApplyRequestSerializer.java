@@ -7,7 +7,7 @@ public class AllowedUserApplyRequestSerializer implements Serializer<AllowedUser
 
   @Override
   public byte[] serialize(String topic, AllowedUserApplyRequest data) {
-    JsonSerializer<AllowedUserApplyRequest> jsonSerializer = new JsonSerializer<>();
+    //JsonSerializer<AllowedUserApplyRequest> jsonSerializer = new JsonSerializer<>();
     return new byte[0];
   }
 }
