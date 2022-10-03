@@ -54,10 +54,10 @@ public class NotificationTopology {
     KStream<String, AllowedUserAppliedEvent> eventStream = userKStream.map(
         (String, User) -> new KeyValue<>(String, allowedUserAppliedEvent(String, User)));
 
-    eventStream.to("allowed-user-event",
+    eventStream.to("allowed-user-events",
         Produced.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()));
 
-    KTable<String, AllowedUserAppliedEvent> eventTable = streamsBuilder.table("allowed-user-event",
+    KTable<String, AllowedUserAppliedEvent> eventTable = streamsBuilder.table("allowed-user-events",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserAppliedEvent()),
         Materialized.as("eventTable"));
 
