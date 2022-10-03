@@ -89,14 +89,6 @@ public class QueryController {
       User value = 
         keyValueStore.get(adUser);
       for(int i = 0; i < keyValueStore.approximateNumEntries(); i++) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          }
-          keyValueStore = kafkaStreams.store(
-            StoreQueryParameters.fromNameAndType("userTable", 
-              QueryableStoreTypes.keyValueStore()));
           value = keyValueStore.get(adUser);
       }
       if(null == value) {
