@@ -34,7 +34,7 @@ import lombok.SneakyThrows;
 public class QueryController {
 
 
-  final HostInfo hostInfo = new HostInfo("localhost", 8083);
+  final HostInfo hostInfo = new HostInfo("192.168.223.63", 8080);
 
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
@@ -51,15 +51,15 @@ public class QueryController {
 
   // List all users
   @SneakyThrows
-  @PostMapping(path = "listAllUsers")
-  public List<User> listAllUsers(@RequestBody AllowedUserApplyRequest request)
+  @GetMapping(path = "listAllUsers")
+  public List<User> listAllUsers()
       throws InterruptedException {
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
       Thread.sleep(500);
     }
-    
+
     Collection<org.apache.kafka.streams.StreamsMetadata> metadataList =
         kafkaStreams.streamsMetadataForStore("userTable");
     // List<User> userValues = new ArrayList<>();
@@ -76,29 +76,27 @@ public class QueryController {
             .constructCollectionLikeType(List.class, User.class);
 
         //List<String> o = mapper.readValue("[\"hello\"]", collectionLikeType);
-        
+
         Object res = restTemplateService.restTemplate("getAllowedUser",
             streamsMetadata.hostInfo().host(), streamsMetadata.hostInfo().port());
         System.out.println(res.toString());
         //mapper.readValue(json, new TypeReference<List<Person>>() {});
         try {
-          List<User> o = mapper.convertValue(res, new TypeReference<List<User>>() {});
+          List<User> o = mapper.convertValue(res, new TypeReference<List<User>>() {
+          });
           setUsers.addAll(o);
         } catch (Exception ex) {
           System.out.println(ex.toString());
         }
         //List<User> o = mapper.convertValue(res, collectionLikeType.class);
-        
-        
-      }
-      else {
+
+      } else {
         ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
             StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
         keyValueStore.all().forEachRemaining(User -> setUsers.add(User.value));
       }
     }
-    
-    
+
     for (User user : setUsers) {
       LdapInfo ldapInfo = new LdapInfo();
       ldapInfo.setAdUser(user.getAdUser());
@@ -155,22 +153,14 @@ public class QueryController {
           StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
 
       value = keyValueStore.get(adUser);
-      if (null == value) {
-        value = new User();
-        value.setAdUser(adUser);
-        LdapInfo ldapInfo = new LdapInfo();
-        ldapInfo.setAdUser(adUser);
-        ldapInfo.setIsValid(false);
-        value.setLdapInfo(ldapInfo);
-      } else {
-        LdapInfo ldapInfo = new LdapInfo();
-        ldapInfo.setAdUser(adUser);
-        ldapInfo.setIsValid(true);
-        value.setLdapInfo(ldapInfo);
-      }
 
-      System.out.println(value);
+    }
 
+    if (null != value) {
+      LdapInfo ldapInfo = new LdapInfo();
+      ldapInfo.setAdUser(adUser);
+      ldapInfo.setIsValid(true);
+      value.setLdapInfo(ldapInfo);
     }
 
     return value;
