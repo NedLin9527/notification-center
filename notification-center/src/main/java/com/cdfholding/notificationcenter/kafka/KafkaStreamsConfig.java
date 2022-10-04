@@ -20,9 +20,11 @@ import static org.springframework.kafka.support.KafkaHeaders.GROUP_ID;
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
 
-  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.20.63:29092'}")
+//  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.20.63:29092'}")
+  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '127.0.0.1:29092'}")
   private String bootstrapAddress;
-  @Value("#{systemProperties['spring.kafka.rpcEndpoint'] ?: '192.168.20.63:8080'}")
+//  @Value("#{systemProperties['spring.kafka.rpcEndpoint'] ?: '192.168.20.162:8080'}")
+  @Value("#{systemProperties['spring.kafka.rpcEndpoint'] ?: '127.0.0.1:8080'}")
   private String rpcEndpoint;
 
   @Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)

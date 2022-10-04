@@ -22,7 +22,13 @@ public class NotificationTopology {
   LdapService ldapService;
 
   @Autowired
+  void mailPipeLine(StreamsBuilder streamsBuilder) {
+    System.out.println("========================== It's mailPipeLine ==========================");
+  }
+
+  @Autowired
   void pipeline(StreamsBuilder streamsBuilder) {
+    System.out.println("========================== It's pipeLine ==========================");
     KStream<String, AllowedUserApplyRequest> commandStream = streamsBuilder.stream(
         "allowed-user-command",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserApplyRequest()));

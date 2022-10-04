@@ -2,6 +2,8 @@ package com.cdfholding.notificationcenter.controller;
 
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
+import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserMailResponse;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AdminController {
 
-  final HostInfo hostInfo = new HostInfo("192.168.20.63", 8080);
+//  final HostInfo hostInfo = new HostInfo("192.168.20.162", 8080);
+  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8080);
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
 
