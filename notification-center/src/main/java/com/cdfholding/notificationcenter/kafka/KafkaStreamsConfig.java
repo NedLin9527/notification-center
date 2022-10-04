@@ -19,7 +19,6 @@ import org.springframework.kafka.config.KafkaStreamsConfiguration;
 @EnableKafka
 @EnableKafkaStreams
 public class KafkaStreamsConfig {
-
   @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.223.63:29092,192.168.223.63:29093,192.168.223.63:29094'}")
   private String bootstrapAddress;
   @Value("#{systemProperties['spring.kafka.rpcEndpoint'] ?: '192.168.223.63:8080'}")

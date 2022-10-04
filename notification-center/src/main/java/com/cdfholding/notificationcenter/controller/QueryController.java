@@ -18,8 +18,6 @@ import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.cdfholding.notificationcenter.domain.LdapInfo;
 import com.cdfholding.notificationcenter.domain.User;
@@ -27,7 +25,6 @@ import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionLikeType;
 import lombok.SneakyThrows;
 
 @RestController
@@ -72,15 +69,13 @@ public class QueryController {
       if (!hostInfo.equals(streamsMetadata.hostInfo())) {
         // Remote
         ObjectMapper mapper = new ObjectMapper();
-        CollectionLikeType collectionLikeType = mapper.getTypeFactory()
-            .constructCollectionLikeType(List.class, User.class);
 
         //List<String> o = mapper.readValue("[\"hello\"]", collectionLikeType);
 
         Object res = restTemplateService.restTemplate("getAllowedUser",
             streamsMetadata.hostInfo().host(), streamsMetadata.hostInfo().port());
         System.out.println(res.toString());
-        //mapper.readValue(json, new TypeReference<List<Person>>() {});
+        // mapper.readValue(json, new TypeReference<List<Person>>() {});
         try {
           List<User> o = mapper.convertValue(res, new TypeReference<List<User>>() {
           });
@@ -124,7 +119,7 @@ public class QueryController {
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
       Thread.sleep(500);
     }
-    // stream eventTable find HostInfo
+    // stream userTable find HostInfo
     KeyQueryMetadata keyMetada =
         kafkaStreams.queryMetadataForKey("userTable", adUser, stringSerializer);
     // Print all metadata HostInfo
