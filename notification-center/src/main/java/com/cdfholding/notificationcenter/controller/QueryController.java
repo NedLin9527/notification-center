@@ -18,8 +18,6 @@ import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.cdfholding.notificationcenter.domain.LdapInfo;
 import com.cdfholding.notificationcenter.domain.User;
@@ -50,9 +48,8 @@ public class QueryController {
 
   // List all users
   @SneakyThrows
-  @PostMapping(path = "listAllUsers")
-  public List<User> listAllUsers(@RequestBody AllowedUserApplyRequest request)
-      throws InterruptedException {
+  @GetMapping(path = "listAllUsers")
+  public List<User> listAllUsers() throws InterruptedException {
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
