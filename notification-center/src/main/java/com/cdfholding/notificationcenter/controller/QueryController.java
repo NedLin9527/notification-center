@@ -14,6 +14,7 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,12 +24,13 @@ import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 
 @RestController
 public class QueryController {
   
 
-  final HostInfo hostInfo = new HostInfo("192.168.223.63", 8080);
+  final HostInfo hostInfo = new HostInfo("192.168.223.239", 8080);
 
   
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
@@ -81,13 +83,12 @@ public class QueryController {
   }
   
   // Query user
-  @PostMapping(path = "/queryUser/{adUser}")
+  @SneakyThrows
+  @GetMapping(path = "/queryUser/{adUser}")
   public User queryUser(
-      @PathVariable("adUser") String adUser, 
-      @RequestBody AllowedUserApplyRequest request) {
-    request.setType("queryUser");
+      @PathVariable("adUser") String adUser) {   
 
-    kafkaTemplate.send("allowed-user", request.getAdUser(), request);
+    // kafkaTemplate.send("allowed-user", request.getAdUser(), request);
 
     // Create KafkaStreams
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
@@ -95,14 +96,10 @@ public class QueryController {
 
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
-        try {
           Thread.sleep(500);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
     }
     // stream eventTable find HostInfo
-    KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("userTable", request.getAdUser(),
+    KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("userTable", adUser,
         stringSerializer);
 
     User value = new User();
@@ -115,7 +112,7 @@ public class QueryController {
       System.out.println("MetaDataclient:" + metadata.size());
       for (StreamsMetadata streamsMetadata : metadata) {
         System.out.println(
-            "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
+          "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
                 .port());
         System.out.println(streamsMetadata.stateStoreNames());
       }
@@ -124,7 +121,7 @@ public class QueryController {
       ObjectMapper mapper = new ObjectMapper();
 
       Object req = restTemplateService.restTemplate(
-          "queryUser/" + request.getAdUser(), keyMetada.activeHost().host(),
+          "checkUser/" + adUser, keyMetada.activeHost().host(),
           keyMetada.activeHost().port());
 
       value = mapper.convertValue(req, User.class);
@@ -134,9 +131,7 @@ public class QueryController {
       ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
           StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
 
-      //while loop until get the data
-      for(int i = 0; i < keyValueStore.approximateNumEntries(); i++) {
-        value = keyValueStore.get(request.getAdUser());
+      value = keyValueStore.get(adUser);
         if(null == value) {
           value = new User();
           value.setAdUser(adUser);
@@ -149,12 +144,36 @@ public class QueryController {
           ldapInfo.setAdUser(adUser);
           ldapInfo.setIsValid(true);
           value.setLdapInfo(ldapInfo);
-          break;
         }
-      }
+
       System.out.println(value);
       
     }
+
+    return value;
+  }
+  
+  @SneakyThrows
+  @GetMapping(path = "/checkUser/{adUser}")
+  public User checkUser(@PathVariable("adUser") String adUser) {
+
+    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
+    // while loop until KafkaStreams.State.RUNNING
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
+        Thread.sleep(500);
+    }
+    ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
+
+    User value = keyValueStore.get(adUser);
+    //while loop until get the data
+    while (value == null) {
+          Thread.sleep(500);
+        keyValueStore = kafkaStreams.store(
+                  StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
+        value = keyValueStore.get(adUser);
+    }
+    System.out.println(value);
 
     return value;
   }
