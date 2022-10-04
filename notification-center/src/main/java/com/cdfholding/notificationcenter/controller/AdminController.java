@@ -2,6 +2,7 @@ package com.cdfholding.notificationcenter.controller;
 
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
+import com.cdfholding.notificationcenter.dto.DeletedAllowedUserResponse;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,8 +56,8 @@ public class AdminController {
     StringSerializer stringSerializer = new StringSerializer();
 
     // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
-        Thread.sleep(500);
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
+      Thread.sleep(500);
     }
     // stream eventTable find HostInfo
     KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("eventTable", request.getAdUser(),
@@ -93,10 +94,11 @@ public class AdminController {
 
       value = keyValueStore.get(request.getAdUser());
       //while loop until get the data
-      while (value == null ) {
-    	  Thread.sleep(500);
-      	keyValueStore = kafkaStreams.store(
-      	          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
+      while (value == null) {
+        Thread.sleep(500);
+        keyValueStore = kafkaStreams.store(
+            StoreQueryParameters.fromNameAndType("eventTable",
+                QueryableStoreTypes.keyValueStore()));
         value = keyValueStore.get(request.getAdUser());
       }
       System.out.println(value);
@@ -108,24 +110,34 @@ public class AdminController {
   }
 
   @SneakyThrows
+  @GetMapping(path = "/delete/{adUser}")
+  public DeletedAllowedUserResponse delete(@PathVariable("adUser") String adUser) {
+
+    //
+    kafkaTemplate.send("allowed-user", adUser, null);
+
+    return new DeletedAllowedUserResponse("", "", "");
+  }
+
+  @SneakyThrows
   @GetMapping(path = "/checkEvent/{adUser}")
   public AllowedUserAppliedEvent checkEvent(@PathVariable("adUser") String adUser) {
 
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
-        Thread.sleep(500);
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
+      Thread.sleep(500);
     }
     ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
         StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
 
     AllowedUserAppliedEvent value = keyValueStore.get(adUser);
     //while loop until get the data
-    while (value == null ) {
-    	  Thread.sleep(500);
-      	keyValueStore = kafkaStreams.store(
-      	          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-        value = keyValueStore.get(adUser);
+    while (value == null) {
+      Thread.sleep(500);
+      keyValueStore = kafkaStreams.store(
+          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
+      value = keyValueStore.get(adUser);
     }
     System.out.println(value);
 
