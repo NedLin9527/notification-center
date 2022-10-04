@@ -27,7 +27,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RestController
 public class QueryController {
   
-  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8080);
+
+  final HostInfo hostInfo = new HostInfo("192.168.223.63", 8080);
+
   
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
   
