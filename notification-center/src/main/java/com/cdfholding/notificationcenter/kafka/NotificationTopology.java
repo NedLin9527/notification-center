@@ -1,7 +1,9 @@
 package com.cdfholding.notificationcenter.kafka;
 
+import com.cdfholding.notificationcenter.domain.SendMail;
 import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.serialization.JsonSerdes;
 import com.cdfholding.notificationcenter.service.LdapService;
@@ -23,7 +25,30 @@ public class NotificationTopology {
 
   @Autowired
   void mailPipeLine(StreamsBuilder streamsBuilder) {
+    System.out.println();
     System.out.println("========================== It's mailPipeLine ==========================");
+    System.out.println();
+
+    KStream<String, AllowedUserMailRequest> commandStream = streamsBuilder.stream(
+        "channel-command",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()));
+
+    commandStream.print(Printed.toSysOut());
+
+    Map<String, KStream<String, AllowedUserMailRequest>> branches = commandStream.split(
+            Named.as("Branch3-"))
+        .branch((key, value) -> value.getType().equals("mail"), Branched.as("MailRequest"))
+        .defaultBranch(Branched.as("Others"));
+
+    KStream<String, AllowedUserMailRequest> mailRequestKStream = branches.get(
+        "Branch3-MailRequest");
+
+    mailRequestKStream.to("channel-mail",
+        Produced.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()));
+
+    streamsBuilder.table("channel-mail",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()),
+        Materialized.as("mailTable"));
   }
 
   @Autowired

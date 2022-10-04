@@ -2,6 +2,7 @@ package com.cdfholding.notificationcenter.serialization;
 
 import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedSuccess;
 import org.apache.kafka.common.serialization.Serde;
@@ -36,6 +37,14 @@ public class JsonSerdes {
     JsonSerializer<AllowedUserAppliedSuccess> jsonSerializer = new JsonSerializer<>();
     JsonDeserializer<AllowedUserAppliedSuccess> jsonDeserializer = new JsonDeserializer<>(
         AllowedUserAppliedSuccess.class);
+
+    return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+  }
+
+  public static Serde<AllowedUserMailRequest> AllowedUserMailRequest() {
+    JsonSerializer<AllowedUserMailRequest> jsonSerializer = new JsonSerializer<>();
+    JsonDeserializer<AllowedUserMailRequest> jsonDeserializer = new JsonDeserializer<>(
+        AllowedUserMailRequest.class);
 
     return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
   }
