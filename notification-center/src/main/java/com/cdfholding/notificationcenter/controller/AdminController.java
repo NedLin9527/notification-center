@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AdminController {
 
-//  final HostInfo hostInfo = new HostInfo("192.168.20.162", 8080);
   final HostInfo hostInfo = new HostInfo("127.0.0.1", 8080);
+//  final HostInfo hostInfo = new HostInfo("192.168.156.63", 8080);
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
 
