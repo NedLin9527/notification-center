@@ -5,7 +5,8 @@ import lombok.Data;
 
 @Data
 //public class AllowedUserMailRequest extends AllowedUserApplyRequest{
-public class AllowedUserMailRequest{
+public class AllowedUserMailRequest {
+
   private String adUser;
   private String type;
   private String mailTo;

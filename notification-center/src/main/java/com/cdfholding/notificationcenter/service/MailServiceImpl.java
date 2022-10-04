@@ -10,12 +10,13 @@ public class MailServiceImpl implements MailService {
   @Override
   public SendMail send(AllowedUserMailRequest request) {
     SendMail sendMail = convert(request);
-    sendMail.setIsSuccess(System.currentTimeMillis()%2 == 0);
+    sendMail.setIsSuccess(System.currentTimeMillis() % 2 == 0);
     return sendMail;
   }
 
   /**
    * AllowedUserMailRequest to SendMail
+   *
    * @param request
    * @return
    */

@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class EmailController {
+
   KafkaTemplate<String, Object> kafkaTemplate;
 
   @Autowired
@@ -66,7 +67,7 @@ public class EmailController {
     StringSerializer stringSerializer = new StringSerializer();
 
     // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
       System.out.println("state = " + kafkaStreams.state());
       Thread.sleep(500);
     }
@@ -105,7 +106,7 @@ public class EmailController {
 
       value = keyValueStore.get(request.getUuid());
       //while loop until get the data
-      while (value == null ) {
+      while (value == null) {
         System.out.println("value is null");
         Thread.sleep(500);
         keyValueStore = kafkaStreams.store(
@@ -123,7 +124,8 @@ public class EmailController {
     kafkaTemplate.send("channel-mail-event", sendMail.getUuid(), sendMail);
 
     //return uuid
-    return new AllowedUserMailResponse(value.getAdUser(), value.getUuid(), null, value.getTimestamp());
+    return new AllowedUserMailResponse(value.getAdUser(), value.getUuid(), null,
+        value.getTimestamp());
   }
 
   @SneakyThrows
@@ -132,7 +134,7 @@ public class EmailController {
 
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
       Thread.sleep(500);
     }
     ReadOnlyKeyValueStore<String, AllowedUserMailRequest> keyValueStore = kafkaStreams.store(
@@ -140,7 +142,7 @@ public class EmailController {
 
     AllowedUserMailRequest value = keyValueStore.get(uuid);
     //while loop until get the data
-    while (value == null ) {
+    while (value == null) {
       Thread.sleep(500);
       keyValueStore = kafkaStreams.store(
           StoreQueryParameters.fromNameAndType("mailTable", QueryableStoreTypes.keyValueStore()));
