@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
@@ -48,9 +50,8 @@ public class QueryController {
 
   // List all users
   @SneakyThrows
-  @GetMapping(path = "listAllUsers")
-  public List<User> listAllUsers()
-      throws InterruptedException {
+  @GetMapping(path = "/listAllUsers")
+  public Set<User> listAllUsers() throws InterruptedException {
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
@@ -59,49 +60,47 @@ public class QueryController {
 
     Collection<org.apache.kafka.streams.StreamsMetadata> metadataList =
         kafkaStreams.streamsMetadataForStore("userTable");
-    // List<User> userValues = new ArrayList<>();
+    ExecutorService executor = Executors.newFixedThreadPool(metadataList.size());
     Set<User> setUsers = new HashSet<>();
     for (StreamsMetadata streamsMetadata : metadataList) {
-      System.out.println("Host info -> " + streamsMetadata.hostInfo().host() + " : "
-          + streamsMetadata.hostInfo().port());
-      System.out.println(streamsMetadata.stateStoreNames());
+      executor.submit(() -> {
+        hostInfoCheck(kafkaStreams, streamsMetadata, setUsers);
+      });
+    }
 
-      if (!hostInfo.equals(streamsMetadata.hostInfo())) {
-        // Remote
-        ObjectMapper mapper = new ObjectMapper();
+    Thread.sleep(500);
+    return setUsers;
+  }
 
-        //List<String> o = mapper.readValue("[\"hello\"]", collectionLikeType);
+  private void hostInfoCheck(KafkaStreams kafkaStreams, StreamsMetadata streamsMetadata,
+      Set<User> setUsers) {
+    System.out.println("Host info -> " + streamsMetadata.hostInfo().host() + " : "
+        + streamsMetadata.hostInfo().port());
+    System.out.println(streamsMetadata.stateStoreNames());
 
-        Object res = restTemplateService.restTemplate("getAllowedUser",
-            streamsMetadata.hostInfo().host(), streamsMetadata.hostInfo().port());
-        System.out.println(res.toString());
-        // mapper.readValue(json, new TypeReference<List<Person>>() {});
-        try {
-          List<User> o = mapper.convertValue(res, new TypeReference<List<User>>() {
-          });
-          setUsers.addAll(o);
-        } catch (Exception ex) {
-          System.out.println(ex.toString());
-        }
-        //List<User> o = mapper.convertValue(res, collectionLikeType.class);
+    if (!hostInfo.equals(streamsMetadata.hostInfo())) {
+      // Remote
+      ObjectMapper mapper = new ObjectMapper();
 
-      } else {
-        ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
-            StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
-        keyValueStore.all().forEachRemaining(User -> setUsers.add(User.value));
+      // List<String> o = mapper.readValue("[\"hello\"]", collectionLikeType);
+
+      Object res = restTemplateService.restTemplate("getAllowedUser",
+          streamsMetadata.hostInfo().host(), streamsMetadata.hostInfo().port());
+      System.out.println(res.toString());
+      // mapper.readValue(json, new TypeReference<List<Person>>() {});
+      try {
+        List<User> o = mapper.convertValue(res, new TypeReference<List<User>>() {});
+        setUsers.addAll(o);
+      } catch (Exception ex) {
+        System.out.println(ex.toString());
       }
+      // List<User> o = mapper.convertValue(res, collectionLikeType.class);
+
+    } else {
+      ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
+          StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
+      keyValueStore.all().forEachRemaining(User -> setUsers.add(User.value));
     }
-
-    for (User user : setUsers) {
-      LdapInfo ldapInfo = new LdapInfo();
-      ldapInfo.setAdUser(user.getAdUser());
-      ldapInfo.setIsValid(true);
-      user.setLdapInfo(ldapInfo);
-    }
-
-    List<User> userValues = new ArrayList<>(setUsers);
-
-    return userValues;
   }
 
   // Query user
