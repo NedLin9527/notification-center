@@ -31,7 +31,7 @@ import lombok.SneakyThrows;
 @RestController
 public class AdminController {
 
-  final HostInfo hostInfo = new HostInfo("192.168.223.63", 8080);
+  final HostInfo hostInfo = new HostInfo("192.168.190.63", 8080);
 
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
 
