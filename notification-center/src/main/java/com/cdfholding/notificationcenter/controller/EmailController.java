@@ -71,7 +71,7 @@ public class EmailController {
       System.out.println("state = " + kafkaStreams.state());
       Thread.sleep(500);
     }
-    // stream eventTable find HostInfo
+    // stream mailTable find HostInfo
     KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("mailTable", request.getUuid(),
         stringSerializer);
 
@@ -94,7 +94,7 @@ public class EmailController {
       ObjectMapper mapper = new ObjectMapper();
 
       Object req = restTemplateService.restTemplate(
-          "checkMail/" + request.getUuid(), keyMetada.activeHost().host(),
+          "remoteCheckMail/" + request.getUuid(), keyMetada.activeHost().host(),
           keyMetada.activeHost().port());
 
       value = mapper.convertValue(req, AllowedUserMailRequest.class);
@@ -122,26 +122,83 @@ public class EmailController {
   }
 
   @SneakyThrows
+  @GetMapping(path = "/remoteCheckMail/{uuid}")
+  public SendMail remoteCheckMail(@PathVariable("uuid") String uuid) {
+    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
+    // while loop until KafkaStreams.State.RUNNING
+    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
+      System.out.println("state = " + kafkaStreams.state());
+      Thread.sleep(500);
+    }
+    // stream mailTable find HostInfo
+      ReadOnlyKeyValueStore<String, SendMail> keyValueStore = kafkaStreams.store(
+          StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
+
+      SendMail value = keyValueStore.get(uuid);
+      //while loop until get the data
+      while (value == null) {
+        System.out.println("value = " + value);
+        Thread.sleep(500);
+        keyValueStore = kafkaStreams.store(
+            StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
+        value = keyValueStore.get(uuid);
+      }
+      System.out.println("value = " + value);
+
+    return value;
+  }
+
+  @SneakyThrows
   @GetMapping(path = "/checkMail/{uuid}")
   public SendMail checkMail(@PathVariable("uuid") String uuid) {
-
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
+    StringSerializer stringSerializer = new StringSerializer();
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
       Thread.sleep(500);
     }
-    ReadOnlyKeyValueStore<String, SendMail> keyValueStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
+    // stream mailTable find HostInfo
+    KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("mailTable", uuid,
+        stringSerializer);
 
-    SendMail value = keyValueStore.get(uuid);
-    //while loop until get the data
-    while (value == null) {
-      Thread.sleep(500);
-      keyValueStore = kafkaStreams.store(
+    SendMail value = new SendMail();
+
+    if (!hostInfo.equals(keyMetada.activeHost())) {
+      System.out.println("HostInfo is different!!" + keyMetada.activeHost());
+
+      // Print all metadata HostInfo
+      Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
+      System.out.println("MetaDataclient:" + metadata.size());
+      for (StreamsMetadata streamsMetadata : metadata) {
+        System.out.println(
+            "Host info -> " + streamsMetadata.hostInfo().host() + " : " + streamsMetadata.hostInfo()
+                .port());
+        System.out.println(streamsMetadata.stateStoreNames());
+      }
+
+      // Remote
+      ObjectMapper mapper = new ObjectMapper();
+
+      Object req = restTemplateService.restTemplate(
+          "remoteCheckMail/" + uuid, keyMetada.activeHost().host(),
+          keyMetada.activeHost().port());
+
+      value = mapper.convertValue(req, SendMail.class);
+
+    } else {
+      ReadOnlyKeyValueStore<String, SendMail> keyValueStore = kafkaStreams.store(
           StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
+
       value = keyValueStore.get(uuid);
+      //while loop until get the data
+      while (value == null) {
+        Thread.sleep(500);
+        keyValueStore = kafkaStreams.store(
+            StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
+        value = keyValueStore.get(uuid);
+      }
+      System.out.println("value = " + value);
     }
-    System.out.println("value = " + value);
 
     return value;
   }

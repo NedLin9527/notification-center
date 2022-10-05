@@ -17,7 +17,7 @@ import java.util.Map;
 @Configuration
 public class KafkaProducerConfiguration {
 
-  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.190.63:29092,192.168.190.63:29093,192.168.190.63:29094'}")
+  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '127.0.0.1:29092,127.0.0.1:29093,127.0.0.1:29094'}")
   private String bootstrapAddress;
 
   @Bean
