@@ -50,15 +50,8 @@ public class NotificationTopology {
     KStream<String, SendMail> mailKStream = mailRequestKStream.mapValues(
         allowedUserMailRequest -> sendMail(allowedUserMailRequest));
 
-    mailRequestKStream.to("channel-mail",
-        Produced.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()));
-
     mailKStream.to("channel-mail-events",
         Produced.with(Serdes.String(), JsonSerdes.SendMail()));
-
-    streamsBuilder.table("channel-mail",
-        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()),
-        Materialized.as("mailTable"));
 
     streamsBuilder.table("channel-mail-events",
         Consumed.with(Serdes.String(), JsonSerdes.SendMail()),

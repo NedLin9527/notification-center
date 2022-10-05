@@ -46,7 +46,7 @@ public class EmailController {
   @Autowired
   MailService mailService;
 
-  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8081);
+  final HostInfo hostInfo = new HostInfo("127.0.0.1", 8080);
 
   public EmailController(KafkaTemplate<String, Object> kafkaTemplate) {
     this.kafkaTemplate = kafkaTemplate;
@@ -119,7 +119,7 @@ public class EmailController {
       Thread.sleep(500);
     }
     // stream eventTable find HostInfo
-    KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("mailTable", uuid,
+    KeyQueryMetadata keyMetada = kafkaStreams.queryMetadataForKey("mailEventsTable", uuid,
         stringSerializer);
 
     SendMail value = new SendMail();
@@ -151,14 +151,7 @@ public class EmailController {
           StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
 
       value = keyValueStore.get(uuid);
-      //while loop until get the data
-      while (value == null) {
-        Thread.sleep(500);
-        keyValueStore = kafkaStreams.store(
-            StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
-        value = keyValueStore.get(uuid);
-        System.out.println("value = " + value);
-      }
+      System.out.println("value = " + value);
     }
 
     return value;
