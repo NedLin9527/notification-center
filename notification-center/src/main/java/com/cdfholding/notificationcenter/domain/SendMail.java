@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 public class SendMail {
+
   private String uuid;
   private String adUser;
   private String mailTo;

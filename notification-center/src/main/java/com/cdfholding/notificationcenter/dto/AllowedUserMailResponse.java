@@ -8,9 +8,10 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class AllowedUserMailResponse {
+
   private String adUser;
   private String result;
   private String reason;
-  @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss", timezone="Asia/Taipei")
+  @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Taipei")
   private Timestamp timestamp;
 }

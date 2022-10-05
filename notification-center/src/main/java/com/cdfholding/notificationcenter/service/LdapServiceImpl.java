@@ -10,7 +10,7 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 
 public class LdapServiceImpl
-   // implements LdapService
+    // implements LdapService
 {
 
   private String ldap_server = "localhost:8081";

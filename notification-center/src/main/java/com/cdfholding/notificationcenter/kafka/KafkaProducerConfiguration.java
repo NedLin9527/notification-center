@@ -16,9 +16,10 @@ import java.util.Map;
 
 @Configuration
 public class KafkaProducerConfiguration {
-  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.223.63:29092,192.168.223.63:29093,192.168.223.63:29094'}")
+
+  @Value("#{systemProperties['spring.kafka.bootstrap-servers'] ?: '192.168.190.63:29092,192.168.190.63:29093,192.168.190.63:29094'}")
   private String bootstrapAddress;
-  
+
   @Bean
   public ProducerFactory<String, ?> producerFactory() {
     Map<String, Object> props = new HashMap<>();

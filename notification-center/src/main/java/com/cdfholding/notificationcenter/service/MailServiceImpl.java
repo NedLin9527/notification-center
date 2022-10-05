@@ -23,7 +23,6 @@ public class MailServiceImpl implements MailService {
   public SendMail send(AllowedUserMailRequest request) {
     SendMail sendMail = convert(request);
     prepareAndSend(sendMail);
-//    sendMail.setIsSuccess(System.currentTimeMillis()%2 == 0);
     return sendMail;
   }
 
@@ -51,6 +50,7 @@ public class MailServiceImpl implements MailService {
 
   /**
    * AllowedUserMailRequest to SendMail
+   *
    * @param request
    * @return
    */

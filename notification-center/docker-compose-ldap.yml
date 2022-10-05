@@ -12,7 +12,7 @@ services:
       - ~/ldap/data:/var/lib/openldap
       - ~/ldap/config:/etc/openldap/slapd.d
       - ~/ldap/certs:/assets/slapd/certs
-    command: [--copy-service,  --loglevel, debug]
+    command: [ --copy-service,  --loglevel, debug ]
   phpldapadmin:
     container_name: phpldapadmin
     image: osixia/phpldapadmin:latest
