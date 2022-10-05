@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: ServiceAdmin
+  boot:
+    admin:
+      notify:
+        line:
+          enabled: true
+          channelSecret: '5dc15d1fa976b8c40654c1d0db71cf6e'
+          channelToken: '6K5NLaEmALTry4msSXSbBaNMuSydHIZD9Z0ToApTwFeHiszr4cNAO8A/Jgmo4QrxV6gBrcRlGCZhvTg72YAj9Izc5Mibp37VKGGL1UtU9Ai15OkZFqZgPfv2iJQaG4IfaTyaEim1t96s5H+mipVXeAdB04t89/1O/w1cDnyilFU='
