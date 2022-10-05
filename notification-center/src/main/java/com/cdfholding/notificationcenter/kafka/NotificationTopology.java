@@ -7,6 +7,7 @@ import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.serialization.JsonSerdes;
 import com.cdfholding.notificationcenter.service.LdapService;
+import com.cdfholding.notificationcenter.service.MailService;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -22,6 +23,9 @@ public class NotificationTopology {
 
   @Autowired
   LdapService ldapService;
+
+  @Autowired
+  MailService mailService;
 
   @Autowired
   void mailPipeLine(StreamsBuilder streamsBuilder) {
@@ -43,12 +47,22 @@ public class NotificationTopology {
     KStream<String, AllowedUserMailRequest> mailRequestKStream = branches.get(
         "Branch3-MailRequest");
 
+    KStream<String, SendMail> mailKStream = mailRequestKStream.mapValues(
+        allowedUserMailRequest -> sendMail(allowedUserMailRequest));
+
     mailRequestKStream.to("channel-mail",
         Produced.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()));
+
+    mailKStream.to("channel-mail-events",
+        Produced.with(Serdes.String(), JsonSerdes.SendMail()));
 
     streamsBuilder.table("channel-mail",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()),
         Materialized.as("mailTable"));
+
+    streamsBuilder.table("channel-mail-events",
+        Consumed.with(Serdes.String(), JsonSerdes.SendMail()),
+        Materialized.as("mailEventsTable"));
   }
 
   @Autowired
@@ -120,6 +134,11 @@ public class NotificationTopology {
     user.setAdUser(adUser);
     user.setLdapInfo(ldapService.query(adUser));
     return user;
+  }
+
+  private SendMail sendMail(AllowedUserMailRequest request) {
+    System.out.println("AllowedUserMailRequest = " + request);
+    return mailService.send(request);
   }
 
 

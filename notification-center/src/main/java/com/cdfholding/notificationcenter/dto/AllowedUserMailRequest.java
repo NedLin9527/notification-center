@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import lombok.Data;
 
 @Data
-//public class AllowedUserMailRequest extends AllowedUserApplyRequest{
 public class AllowedUserMailRequest{
   private String adUser;
   private String type;
@@ -13,5 +12,4 @@ public class AllowedUserMailRequest{
   private String title;
   private Timestamp timestamp;
   private String uuid;
-  private String mailFrom;
 }

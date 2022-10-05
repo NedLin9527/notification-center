@@ -96,10 +96,9 @@ public class EmailController {
           "checkMail/" + request.getUuid(), keyMetada.activeHost().host(),
           keyMetada.activeHost().port());
 
-//      value = mapper.convertValue(req, AllowedUserAppliedEvent.class);
+      value = mapper.convertValue(req, AllowedUserMailRequest.class);
 
     } else {
-
       ReadOnlyKeyValueStore<String, AllowedUserMailRequest> keyValueStore = kafkaStreams.store(
           StoreQueryParameters.fromNameAndType("mailTable", QueryableStoreTypes.keyValueStore()));
 
@@ -116,34 +115,28 @@ public class EmailController {
       System.out.println("value = " + value);
     }
 
-    //send Mail
-    SendMail sendMail = mailService.send(request);
-
-    //send channel-mail-event
-    kafkaTemplate.send("channel-mail-event", sendMail.getUuid(), sendMail);
-
     //return uuid
     return new AllowedUserMailResponse(value.getAdUser(), value.getUuid(), null, value.getTimestamp());
   }
 
   @SneakyThrows
   @GetMapping(path = "/checkMail/{uuid}")
-  public AllowedUserMailRequest checkMail(@PathVariable("uuid") String uuid) {
+  public SendMail checkMail(@PathVariable("uuid") String uuid) {
 
     KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
     // while loop until KafkaStreams.State.RUNNING
     while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)){
       Thread.sleep(500);
     }
-    ReadOnlyKeyValueStore<String, AllowedUserMailRequest> keyValueStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("mailTable", QueryableStoreTypes.keyValueStore()));
+    ReadOnlyKeyValueStore<String, SendMail> keyValueStore = kafkaStreams.store(
+        StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
 
-    AllowedUserMailRequest value = keyValueStore.get(uuid);
+    SendMail value = keyValueStore.get(uuid);
     //while loop until get the data
     while (value == null ) {
       Thread.sleep(500);
       keyValueStore = kafkaStreams.store(
-          StoreQueryParameters.fromNameAndType("mailTable", QueryableStoreTypes.keyValueStore()));
+          StoreQueryParameters.fromNameAndType("mailEventsTable", QueryableStoreTypes.keyValueStore()));
       value = keyValueStore.get(uuid);
     }
     System.out.println("value = " + value);

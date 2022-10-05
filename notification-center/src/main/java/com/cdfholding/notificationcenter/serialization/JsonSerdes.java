@@ -1,5 +1,6 @@
 package com.cdfholding.notificationcenter.serialization;
 
+import com.cdfholding.notificationcenter.domain.SendMail;
 import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
@@ -45,6 +46,14 @@ public class JsonSerdes {
     JsonSerializer<AllowedUserMailRequest> jsonSerializer = new JsonSerializer<>();
     JsonDeserializer<AllowedUserMailRequest> jsonDeserializer = new JsonDeserializer<>(
         AllowedUserMailRequest.class);
+
+    return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+  }
+
+  public static Serde<SendMail> SendMail() {
+    JsonSerializer<SendMail> jsonSerializer = new JsonSerializer<>();
+    JsonDeserializer<SendMail> jsonDeserializer = new JsonDeserializer<>(
+        SendMail.class);
 
     return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
   }
