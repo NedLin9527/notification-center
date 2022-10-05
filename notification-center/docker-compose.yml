@@ -40,6 +40,7 @@ services:
     container_name: kafka2
     depends_on:
       - zookeeper
+      - kafka
     ports:
       - "29093:29093"
     environment:
@@ -62,6 +63,7 @@ services:
     container_name: kafka3
     depends_on:
       - zookeeper
+      - kafka
     ports:
       - "29094:29094"
     environment:
