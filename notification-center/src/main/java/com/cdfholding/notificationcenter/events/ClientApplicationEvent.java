@@ -4,6 +4,7 @@ import com.cdfholding.notificationcenter.model.Application;
 import java.io.Serializable;
 
 public class ClientApplicationEvent implements Serializable {
+
   private static final long serialVersionUID = 1L;
 
   private final Application application;

@@ -1,9 +1,13 @@
 package com.cdfholding.notificationcenter.serialization;
 
 import com.cdfholding.notificationcenter.domain.SendMail;
+import com.cdfholding.notificationcenter.domain.Sms;
+import com.cdfholding.notificationcenter.domain.Push;
 import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserSmsRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserPushRequest;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedSuccess;
 import org.apache.kafka.common.serialization.Serde;
@@ -57,4 +61,35 @@ public class JsonSerdes {
 
     return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
   }
+
+  public static Serde<AllowedUserSmsRequest> AllowedUserSmsRequest() {
+    JsonSerializer<AllowedUserSmsRequest> jsonSerializer = new JsonSerializer<>();
+    JsonDeserializer<AllowedUserSmsRequest> jsonDeserializer = new JsonDeserializer<>(
+        AllowedUserSmsRequest.class);
+
+    return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+  }
+
+  public static Serde<Sms> Sms() {
+    JsonSerializer<Sms> jsonSerializer = new JsonSerializer<>();
+    JsonDeserializer<Sms> jsonDeserializer = new JsonDeserializer<>(
+        Sms.class);
+
+    return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+  }
+  
+	public static Serde<AllowedUserPushRequest> AllowedUserPushRequest() {
+		JsonSerializer<AllowedUserPushRequest> jsonSerializer = new JsonSerializer<>();
+		JsonDeserializer<AllowedUserPushRequest> jsonDeserializer = new JsonDeserializer<>(AllowedUserPushRequest.class);
+
+		return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+	}
+
+	public static Serde<Push> Push() {
+		JsonSerializer<Push> jsonSerializer = new JsonSerializer<>();
+		JsonDeserializer<Push> jsonDeserializer = new JsonDeserializer<>(Push.class);
+
+		return Serdes.serdeFrom(jsonSerializer, jsonDeserializer);
+	}
+  
 }

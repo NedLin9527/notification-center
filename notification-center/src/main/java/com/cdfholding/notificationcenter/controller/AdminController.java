@@ -1,161 +1,116 @@
 package com.cdfholding.notificationcenter.controller;
 
 
-import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyResponse;
 import com.cdfholding.notificationcenter.dto.DeletedAllowedUserResponse;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
+import com.cdfholding.notificationcenter.service.KafkaService;
 import com.cdfholding.notificationcenter.service.RestTemplateService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.Collection;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.KeyQueryMetadata;
-import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.StreamsMetadata;
-import org.apache.kafka.streams.state.HostInfo;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import com.cdfholding.notificationcenter.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import org.springframework.kafka.requestreply.RequestReplyFuture;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import lombok.SneakyThrows;
 
+
+@Tag(name = "Admin Management 管理功能")
+@Log4j2
 @RestController
 public class AdminController {
 
-  final HostInfo hostInfo = new HostInfo("192.168.190.63", 8080);
-
+  @Autowired
+  ReplyingKafkaTemplate<String, AllowedUserApplyRequest, AllowedUserAppliedEvent> template;
+  @Autowired
   KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate;
-
   @Autowired
   StreamsBuilderFactoryBean factoryBean;
-
+  @Autowired
+  UserService userService;
   @Autowired
   RestTemplateService restTemplateService;
+  @Autowired
+  KafkaService<AllowedUserApplyRequest, AllowedUserAppliedEvent> kafkaService;
 
   public AdminController(KafkaTemplate<String, AllowedUserApplyRequest> kafkaTemplate) {
     this.kafkaTemplate = kafkaTemplate;
   }
 
 
-  @SneakyThrows
+  @Operation(summary = "新增", description = "將使用者資訊傳入並新增")
   @PostMapping(path = "/apply")
   public AllowedUserApplyResponse apply(@RequestBody AllowedUserApplyRequest request) {
     request.setType("apply");
+
     // send to Kafka
-    kafkaTemplate.send("allowed-user-command", request.getAdUser(), request);
+    try {
+      ProducerRecord<String, AllowedUserApplyRequest> record = new ProducerRecord<>(
+          "allowed-user-command", request);
+      TopicPartition replyPartition = template.getAssignedReplyTopicPartitions().iterator().next();
+      if (template.getAssignedReplyTopicPartitions() != null &&
+          template.getAssignedReplyTopicPartitions().iterator().hasNext()) {
+        replyPartition = template.getAssignedReplyTopicPartitions().iterator().next();
 
-    // Create KafkaStreams
-    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
-    StringSerializer stringSerializer = new StringSerializer();
-
-    // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
-      Thread.sleep(500);
-    }
-    // stream eventTable find HostInfo
-    KeyQueryMetadata keyMetada =
-        kafkaStreams.queryMetadataForKey("eventTable", request.getAdUser(), stringSerializer);
-
-    AllowedUserAppliedEvent value = new AllowedUserAppliedEvent();
-
-    if (!hostInfo.equals(keyMetada.activeHost())) {
-      System.out.println("HostInfo is different!!" + keyMetada.activeHost());
-
-      // Print all metadata HostInfo
-      Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
-      System.out.println("MetaDataclient:" + metadata.size());
-      for (StreamsMetadata streamsMetadata : metadata) {
-        System.out.println("Host info -> " + streamsMetadata.hostInfo().host() + " : "
-            + streamsMetadata.hostInfo().port());
-        System.out.println(streamsMetadata.stateStoreNames());
       }
+      record.headers()
+          .add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, "allowed-user-events".getBytes()))
+          .add(new RecordHeader(KafkaHeaders.REPLY_PARTITION,
+              intToBytesBigEndian(replyPartition.partition())));
+      RequestReplyFuture<String, AllowedUserApplyRequest, AllowedUserAppliedEvent> replyFuture = template.sendAndReceive(
+          record);
+      SendResult<String, AllowedUserApplyRequest> sendResult = replyFuture.getSendFuture()
+          .get(10, TimeUnit.SECONDS);
+      log.info("Sent ok: " + sendResult.getRecordMetadata());
+      ConsumerRecord<String, AllowedUserAppliedEvent> consumerRecord = replyFuture.get(10,
+          TimeUnit.SECONDS);
+      log.info("Return value: " + consumerRecord.value());
 
-      // Remote
-      ObjectMapper mapper = new ObjectMapper();
-
-      Object req = restTemplateService.restTemplate("checkEvent/" + request.getAdUser(),
-          keyMetada.activeHost().host(), keyMetada.activeHost().port());
-
-      value = mapper.convertValue(req, AllowedUserAppliedEvent.class);
-
-    } else {
-
-      ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
-          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-
-      value = keyValueStore.get(request.getAdUser());
-      // while loop until get the data
-      while (value == null) {
-        Thread.sleep(500);
-        keyValueStore = kafkaStreams.store(StoreQueryParameters.fromNameAndType("eventTable",
-            QueryableStoreTypes.keyValueStore()));
-        value = keyValueStore.get(request.getAdUser());
-      }
-      System.out.println(value);
+      return new AllowedUserApplyResponse(consumerRecord.value().getAdUser(),
+          consumerRecord.value().getResult(), consumerRecord.value().getReason());
+    } catch (ExecutionException e) {
+      return new AllowedUserApplyResponse(request.getAdUser(), "ExecutionException", null);
+    } catch (InterruptedException e) {
+      return new AllowedUserApplyResponse(request.getAdUser(), "InterruptedException", null);
+    } catch (TimeoutException e) {
+      return new AllowedUserApplyResponse(request.getAdUser(), "TimeoutException", null);
     }
+  }
 
-    return new AllowedUserApplyResponse(value.getAdUser(), value.getResult(), value.getReason());
+  private static byte[] intToBytesBigEndian(final int data) {
+    return new byte[]{(byte) ((data >> 24) & 0xff), (byte) ((data >> 16) & 0xff),
+        (byte) ((data >> 8) & 0xff), (byte) ((data >> 0) & 0xff),};
   }
 
   @SneakyThrows
+  @Operation(summary = "刪除", description = "刪除使用者使用權限")
   @GetMapping(path = "/delete/{adUser}")
-  public DeletedAllowedUserResponse delete(@PathVariable("adUser") String adUser) {
+  public DeletedAllowedUserResponse delete(
+      @Parameter(required = true, description = "使用者名稱", example = "AD12345") @PathVariable("adUser") String adUser) {
 
-    DeletedAllowedUserResponse response = null;
-
-    // Create KafkaStreams
-    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
-    StringSerializer stringSerializer = new StringSerializer();
-
-    // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
-      Thread.sleep(500);
-    }
-    // stream eventTable find HostInfo
-    KeyQueryMetadata keyMetada =
-        kafkaStreams.queryMetadataForKey("userTable", adUser, stringSerializer);
-    // Print all metadata HostInfo
-    Collection<StreamsMetadata> metadata = kafkaStreams.metadataForAllStreamsClients();
-    System.out.println("MetaDataclient:" + metadata.size());
-    for (StreamsMetadata streamsMetadata : metadata) {
-      System.out.println("Host info -> " + streamsMetadata.hostInfo().host() + " : "
-          + streamsMetadata.hostInfo().port());
-      System.out.println(streamsMetadata.stateStoreNames());
-    }
-    User value = new User();
-
-    if (!hostInfo.equals(keyMetada.activeHost())) {
-      System.out.println("HostInfo is different!!");
-      System.out.println("HostInfo is different!!" + "Host:" + hostInfo);
-      System.out.println("HostInfo is different!!" + "key Host:" + keyMetada.activeHost());
-      // Remote
-      ObjectMapper mapper = new ObjectMapper();
-
-      Object req = restTemplateService.restTemplate("checkUser/" + adUser,
-          keyMetada.activeHost().host(), keyMetada.activeHost().port());
-
-      value = mapper.convertValue(req, User.class);
-
-    } else {
-
-      ReadOnlyKeyValueStore<String, User> keyValueStore = kafkaStreams.store(
-          StoreQueryParameters.fromNameAndType("userTable", QueryableStoreTypes.keyValueStore()));
-
-      value = keyValueStore.get(adUser);
-
-
-    }
-
-    if (null == value) {
+    DeletedAllowedUserResponse response;
+    int deleteNum = userService.delete(adUser);
+    if (deleteNum <= 0) {
 
       response = new DeletedAllowedUserResponse(adUser, "Failure", "USER NOT FOUND");
 
@@ -163,35 +118,16 @@ public class AdminController {
 
       response = new DeletedAllowedUserResponse(adUser, "Successful", "");
 
-      kafkaTemplate.send("allowed-user", adUser, null);
     }
-
     return response;
   }
 
   @SneakyThrows
+  @Operation(summary = "檢查", description = "檢查使用者新增結果")
   @GetMapping(path = "/checkEvent/{adUser}")
-  public AllowedUserAppliedEvent checkEvent(@PathVariable("adUser") String adUser) {
-
-    KafkaStreams kafkaStreams = factoryBean.getKafkaStreams();
-    // while loop until KafkaStreams.State.RUNNING
-    while (!kafkaStreams.state().equals(KafkaStreams.State.RUNNING)) {
-      Thread.sleep(500);
-    }
-    ReadOnlyKeyValueStore<String, AllowedUserAppliedEvent> keyValueStore = kafkaStreams.store(
-        StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-
-    AllowedUserAppliedEvent value = keyValueStore.get(adUser);
-    // while loop until get the data
-    while (value == null) {
-      Thread.sleep(500);
-      keyValueStore = kafkaStreams.store(
-          StoreQueryParameters.fromNameAndType("eventTable", QueryableStoreTypes.keyValueStore()));
-      value = keyValueStore.get(adUser);
-    }
-    System.out.println(value);
-
-    return value;
+  public AllowedUserAppliedEvent checkEvent(
+      @Parameter(required = true, description = "使用者名稱", example = "AD12345") @PathVariable("adUser") String adUser) {
+    return kafkaService.getKTable("eventTable", null, adUser, AllowedUserAppliedEvent.class, true);
   }
 
 }

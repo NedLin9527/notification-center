@@ -1,21 +1,32 @@
 package com.cdfholding.notificationcenter.kafka;
 
+import com.cdfholding.notificationcenter.domain.Push;
 import com.cdfholding.notificationcenter.domain.SendMail;
+import com.cdfholding.notificationcenter.domain.Sms;
 import com.cdfholding.notificationcenter.domain.User;
 import com.cdfholding.notificationcenter.dto.AllowedUserApplyRequest;
 import com.cdfholding.notificationcenter.dto.AllowedUserMailRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserPushRequest;
+import com.cdfholding.notificationcenter.dto.AllowedUserSmsRequest;
 import com.cdfholding.notificationcenter.events.AllowedUserAppliedEvent;
 import com.cdfholding.notificationcenter.serialization.JsonSerdes;
 import com.cdfholding.notificationcenter.service.LdapService;
 import com.cdfholding.notificationcenter.service.MailService;
+import com.cdfholding.notificationcenter.service.PushService;
+import com.cdfholding.notificationcenter.service.SmsService;
+import java.util.Map;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.Branched;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Named;
+import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.kstream.Produced;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component
 public class NotificationTopology {
@@ -28,37 +39,83 @@ public class NotificationTopology {
   MailService mailService;
 
   @Autowired
+  SmsService smsService;
+
+  @Autowired
+  PushService pushService;
+  
+  @Autowired
+  void smsPipeLine(StreamsBuilder streamsBuilder) {
+    System.out.println();
+    System.out.println("========================== It's smsPipeLine ==========================");
+    System.out.println();
+
+    KStream<String, AllowedUserSmsRequest> commandStream = streamsBuilder.stream(
+        "sms-command",
+        Consumed.with(Serdes.String(), JsonSerdes.AllowedUserSmsRequest()));
+
+    commandStream.print(Printed.toSysOut());
+
+    Map<String, KStream<String, AllowedUserSmsRequest>> branches = commandStream.split(
+            Named.as("SmsBranch-"))
+//        .branch((key, value) -> value.getType().equals("sms"), Branched.as("SmsRequest"))
+        .defaultBranch(Branched.as("Request"));
+
+    KStream<String, AllowedUserSmsRequest> smsRequestKStream = branches.get(
+        "SmsBranch-Request");
+
+    KStream<String, Sms> smsKStream = smsRequestKStream.mapValues(
+        allowedUserSmsRequest -> sms(allowedUserSmsRequest));
+
+    smsKStream.to("sms-events",
+        Produced.with(Serdes.String(), JsonSerdes.Sms()));
+
+    streamsBuilder.table("sms-events",
+        Consumed.with(Serdes.String(), JsonSerdes.Sms()),
+        Materialized.as("smsEventsTable"));
+  }
+
+  /**
+   * Send SMS
+   * @param request
+   * @return
+   */
+  private Sms sms(AllowedUserSmsRequest request) {
+    return smsService.send(request);
+  }
+
+  @Autowired
   void mailPipeLine(StreamsBuilder streamsBuilder) {
     System.out.println();
     System.out.println("========================== It's mailPipeLine ==========================");
     System.out.println();
 
     KStream<String, AllowedUserMailRequest> commandStream = streamsBuilder.stream(
-        "channel-command",
+        "mail-command",
         Consumed.with(Serdes.String(), JsonSerdes.AllowedUserMailRequest()));
 
     commandStream.print(Printed.toSysOut());
 
     Map<String, KStream<String, AllowedUserMailRequest>> branches = commandStream.split(
-            Named.as("Branch3-"))
-        .branch((key, value) -> value.getType().equals("mail"), Branched.as("MailRequest"))
-        .defaultBranch(Branched.as("Others"));
+            Named.as("MailBranch-"))
+//        .branch((key, value) -> value.getType().equals("mail"), Branched.as("MailRequest"))
+        .defaultBranch(Branched.as("Request"));
 
     KStream<String, AllowedUserMailRequest> mailRequestKStream = branches.get(
-        "Branch3-MailRequest");
+        "MailBranch-Request");
 
     KStream<String, SendMail> mailKStream = mailRequestKStream.mapValues(
         allowedUserMailRequest -> sendMail(allowedUserMailRequest));
 
-    mailKStream.to("channel-mail-events",
+    mailKStream.to("mail-events",
         Produced.with(Serdes.String(), JsonSerdes.SendMail()));
 
-    streamsBuilder.table("channel-mail-events",
+    streamsBuilder.table("mail-events",
         Consumed.with(Serdes.String(), JsonSerdes.SendMail()),
         Materialized.as("mailEventsTable"));
   }
 
-  @Autowired
+  //@Autowired
   void pipeline(StreamsBuilder streamsBuilder) {
     System.out.println("========================== It's pipeLine ==========================");
     KStream<String, AllowedUserApplyRequest> commandStream = streamsBuilder.stream(
@@ -110,7 +167,7 @@ public class NotificationTopology {
     AllowedUserAppliedEvent appliedEvent = new AllowedUserAppliedEvent();
     appliedEvent.setAdUser(adUser);
 
-    if (null != user & user.getLdapInfo().getIsValid() == true) {
+    if (null != user & user.getLdapInfo().getIsValid()) {
       appliedEvent.setResult("Success");
       appliedEvent.setReason(null);
     } else {
@@ -134,5 +191,36 @@ public class NotificationTopology {
     return mailService.send(request);
   }
 
+	@Autowired
+	void pushPipeLine(StreamsBuilder streamsBuilder) {
+		System.out.println("========================== It's pushPipeLine ==========================");
 
+		KStream<String, AllowedUserPushRequest> commandStream = streamsBuilder.stream("push-command",
+				Consumed.with(Serdes.String(), JsonSerdes.AllowedUserPushRequest()));
+
+		commandStream.print(Printed.toSysOut());
+
+		Map<String, KStream<String, AllowedUserPushRequest>> branches = commandStream.split(Named.as("pushBranch-"))
+				.defaultBranch(Branched.as("Request"));
+
+		KStream<String, AllowedUserPushRequest> pushRequestKStream = branches.get("pushBranch-Request");
+
+		KStream<String, Push> pushKStream = pushRequestKStream
+				.mapValues(allowedUserPushRequest -> push(allowedUserPushRequest));
+
+		pushKStream.to("push-events", Produced.with(Serdes.String(), JsonSerdes.Push()));
+
+		streamsBuilder.table("push-events", Consumed.with(Serdes.String(), JsonSerdes.Push()),
+				Materialized.as("pushEventsTable"));
+	}
+
+	/**
+	 * Send push
+	 * 
+	 * @param request
+	 * @return
+	 */
+	private Push push(AllowedUserPushRequest request) {
+		return pushService.send(request);
+	}
 }

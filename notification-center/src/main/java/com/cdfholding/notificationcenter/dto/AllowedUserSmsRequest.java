@@ -4,12 +4,11 @@ import java.sql.Timestamp;
 import lombok.Data;
 
 @Data
-public class AllowedUserMailRequest {
+public class AllowedUserSmsRequest {
 
   private String adUser;
-  private String mailTo;
-  private String content;
-  private String title;
-  private Timestamp timestamp;
   private String uuid;
+  private String phoneNum;
+  private String content;
+  private Timestamp timestamp;
 }
